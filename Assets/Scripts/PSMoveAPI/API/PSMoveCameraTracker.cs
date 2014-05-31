@@ -25,6 +25,7 @@ public class PSMoveCameraTracker {
 
 	public PSMoveCameraTracker() {
 		this.tracker = psmoveapi_csharp.psmove_tracker_create_default();
+		tracker.set_mirror(1);
 	}
 	
 	#region Configuration
@@ -39,7 +40,7 @@ public class PSMoveCameraTracker {
 		}
 
 		fusion = psmoveapi_csharp.psmove_fusion_new(tracker, zNear, zFar);
-		if(fusion != null) {
+		if(fusion == null) {
 			Log("Could not enable fusion");
 		} else {
 			Log("Fusion enabled");
@@ -51,11 +52,13 @@ public class PSMoveCameraTracker {
 	public void Disable() {
 		if(fusion != null) {
 			psmoveapi_csharp.psmove_fusion_free(fusion);
+			fusion.Dispose();
 			fusion = null;
 		}
 
 		if(tracker != null) {
-			//psmoveapi_csharp.psmove_tracker_free(tracker);
+			psmoveapi_csharp.psmove_tracker_free(tracker);
+			tracker.Dispose();
 			tracker = null;
 		}
 	}
@@ -86,11 +89,18 @@ public class PSMoveCameraTracker {
 		tracker.update_image();
 		/* Track controllers in the camera picture */
 		tracker.update();
-
 	}
 
 	private Vector3 trackerPosition;
 	private Vector3 fusionPosition;
+
+	public void EnableAutoUpdateColor(PSMoveController controller) {
+		tracker.set_auto_update_leds(controller.Move, 1);
+	}
+
+	public void DisableAutoUpdateColor(PSMoveController controller) {
+		tracker.set_auto_update_leds(controller.Move, 0);
+	}
 
 	public void UpdateControllerPosition(PSMoveController controller) {
 		if(tracker != null) {
@@ -101,6 +111,7 @@ public class PSMoveCameraTracker {
 			fusion.get_position(controller.Move, out fusionPosition.x, out fusionPosition.y, out fusionPosition.z);
 		}
 
+		Debug.Log(fusionPosition + ", " + trackerPosition);
 		controller.UpdatePosition(trackerPosition, fusionPosition);
 	}
 
